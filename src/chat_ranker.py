@@ -18,6 +18,7 @@ class ChatRanker(object):
     self.mode = mode
     self.fc = FeatureCombiner(feature_names=feature_names, corpus_path=corpus_path)
     _, self.target_vectors = self.fc.combine_all(mode=self.mode)
+    #self.target_embedded_vectors =
 
   #def __init__(self, feature_names=['ChatSkipthoughts'], corpus_path=config.CORPUS_PATH):
   #  self.features = []
@@ -28,8 +29,8 @@ class ChatRanker(object):
   #    class_ = getattr(module, feature_name)
   #    self.features.append(class_(corpus_path=corpus_path))
 
-  def topk(self, query, k=5):
-    return self.rank(query)[:k]
+  def topk(self, query, k=5, theano_context=None):
+    return self.rank(query, theano_context=theano_context)[:k]
 
   #def score(self, query, features, weights):
   #  """ Combine multiple features to rank results """
@@ -41,11 +42,11 @@ class ChatRanker(object):
 
   #  return feature_scores[0]
 
-  def rank(self, query):
+  def rank(self, query, theano_context=None):
     source_vector = self.fc.combine_query(query=query)
     query_triplet = (None, source_vector, self.target_vectors)
 
-    source, target = eval_rank.evaluate(query_triplet, '../models/ranking', out=True)
+    source, target = eval_rank.evaluate(query_triplet, '../models/ranking', out=True, theano_context=theano_context)
 
     score_list = self.compute_rank(source, target)
 

@@ -352,3 +352,159 @@ table.dataTable thead .sorting:after {
 .panel-yellow a:hover {
     color: #df8a13;
 }
+
+/*!
+ * User additions
+ */
+
+.form-control.response-box {
+  display: table;
+  min-height: 130px;
+  margin-bottom: 10px;
+}
+
+.response-binary {
+  float: left;
+  width: 100%;
+  border-radius: 4px;
+  border-color: #eee;
+  border-style: solid;
+  border-width: 2px;
+  padding: 5px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+}
+
+.response-binary-true {
+  float: left;
+  width: 45%;
+  border-radius: 4px;
+  margin-left: 2px;
+  color: #337ab7;
+  background-color: #fff;
+  padding: 5px;
+  text-align: center;
+}
+
+.response-binary-false {
+  float: right;
+  width: 45%;
+  border-radius: 4px;
+  margin-left: 2px;
+  color: #337ab7;
+  background-color: #fff;
+  padding: 5px;
+  text-align: center;
+}
+
+.response-binary-true:hover,
+.response-binary-true:active,
+.response-binary-false:hover,
+.response-binary-false:active
+{
+  color: #337ab7;
+  background-color: #eee;
+  cursor: pointer;
+  cursor: hand;
+}
+
+.response-binary-true.active,
+.response-binary-false.active
+{
+  background-color: #337ab7;
+  color: #fff;
+}
+
+.response-suggestions {
+  float: left;
+  width: 100%;
+  border-radius: 4px;
+  border-color: #eee;
+  border-style: solid;
+  border-width: 2px;
+  padding: 5px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+}
+
+.response-pill {
+  float: left;
+  clear: left;
+  border-radius: 4px;
+  margin-left: 2px;
+  color: #337ab7;
+  background-color: #fff;
+  padding: 5px;
+  margin: 2px;
+}
+
+.response-pill:hover,
+.response-pill:active,
+.response-pill.editing
+{
+  color: #337ab7         !important;
+  background-color: #eee !important;
+  cursor: pointer;
+  cursor: hand;
+}
+.response-pill:active
+{
+  color: #fff;
+  background-color: #337ab7;
+  cursor: pointer;
+  cursor: hand;
+}
+
+.response-pill-expand 
+{
+  font-size: 20px !important;
+}
+.response-pill-expand:hover
+{
+  background-color: #eee;
+}
+
+pre p {
+  display: inline;
+}
+
+pre h3 {
+  display: block;
+}
+
+.highlight-fail
+{
+  background: rgba(217, 83, 79, 0.5) !important; /* #d9534f */  
+}
+
+.highlight-pass
+{
+  background: rgba(92, 184, 92, 0.5)  !important; /* #5cb85c */
+}
+
+.highlight-fail:hover
+{
+  background: rgba(217, 83, 79, 0.7)  !important; /* #d9534f */
+}
+
+.highlight-pass:hover
+{
+  background: rgba(92, 184, 92, 0.7)  !important; /* #5cb85c */
+}
+
+.response-form-button 
+{
+  float: left;
+  opacity: 0.5;
+}
+.response-form-button:hover
+{
+  opacity: 1.0;
+}
+
+.nothing {
+  border: 0;
+  outline: none;
+}
+
+

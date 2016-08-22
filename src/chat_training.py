@@ -3,8 +3,10 @@ from chat_database import ChatDatabase
 import config
 import itertools
 
+import sys
+sys.path.append('../')
+
 from ranking.skipthoughts import skipthoughts
-from ranking.skipthoughts import eval_rank
 
 from sklearn.cross_validation import train_test_split
 
@@ -33,9 +35,6 @@ class ChatTraining(object):
     self.train = (self.target_train, source_train_vectors, target_train_vectors)
     self.dev = (self.target_test, source_test_vectors, target_test_vectors)
 
-    import IPython; IPython.embed();
-
-    eval_rank.trainer(self.train, self.dev, saveto=config.SNAPSHOT)
 
 
   def get_chats(self):
@@ -74,7 +73,8 @@ class ChatTraining(object):
       target.append(pair[1]['msg'])
 
     source_train, source_test, target_train, target_test = \
-        train_test_split(source, target, test_size=config.TEST_SIZE)
+        train_test_split(source, target, test_size=config.TEST_SIZE,
+                         random_state=config.RANDOM_STATE)
 
     return source_train, source_test, target_train, target_test
 
@@ -86,17 +86,22 @@ class ChatTraining(object):
     return source_vectors, target_vectors
 
   def _rename_message(self, message, agents):
-   # Filter empty messages
-   if message.get('msg', '') == '':
-     return
-   # Replace names
-   else:
-     renamed = message
-     if message.get('name', '') in agents:
-       renamed['name'] = config.AGENT_TAG
-     else:
-       renamed['name'] = config.CUST_TAG
-     return renamed
+    # Filter empty messages
+    if message.get('msg', '') == '':
+      return
+    # Replace names
+    else:
+      renamed = message
+      if message.get('name', '') in agents:
+        renamed['name'] = config.AGENT_TAG
+      else:
+        renamed['name'] = config.CUST_TAG
+      return renamed
 
 if __name__ == "__main__":
   ct = ChatTraining()
+
+  import IPython; IPython.embed();
+
+  from ranking.skipthoughts import eval_rank_importance as eval_rank
+  eval_rank.trainer(ct.train, ct.dev, saveto=config.SNAPSHOT)

@@ -29,6 +29,9 @@
     <!-- Custom Fonts -->
     <link href="../bower_components/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
 
+    <!-- Code Highlighting CSS -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/styles/default.min.css">
+
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -174,13 +177,13 @@
                               <!-- /input-group -->
                           </li>
                           <li>
-                              <a href="index"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+                              <a href="/dashboard"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                           </li>
                           <li>
-                              <a href="ranking"><i class="fa fa-bar-chart-o fa-fw"></i> Chat<span class="fa arrow"></span></a>
+                              <a href="/dashboard/ranking"><i class="fa fa-bar-chart-o fa-fw"></i> Chat<span class="fa arrow"></span></a>
                           </li>
                           <li>
-                              <a href="grading"><i class="fa fa-files-o fa-fw"></i> Grading<span class="fa arrow"></span></a>
+                              <a href="/dashboard/grading"><i class="fa fa-files-o fa-fw"></i> Grading<span class="fa arrow"></span></a>
                           </li>
                       </ul>
                   </div>
@@ -206,9 +209,16 @@
     <script src="../bower_components/raphael/raphael-min.js"></script>
     <script src="../bower_components/morrisjs/morris.min.js"></script>
     <script src="../js/morris-data.js"></script>
-
+    
     <!-- Custom Theme JavaScript -->
     <script src="{{ url_for('static', filename='dist/js/sb-admin-2.js')}}"></script>
+
+    <!-- User JavaScript -->
+    <script src="{{ url_for('static', filename='dist/js/user.js')}}"></script>
+
+    <!-- Syntax Highlighting JavaScript -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
 
 </body>
 

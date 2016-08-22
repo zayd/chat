@@ -9,7 +9,7 @@ import importlib
 
 class FeatureCombiner(object):
 
-  def __init__(self, feature_names=['SkipthoughtFeatures', 'TfidfFeatures'], combiner='concat',           corpus_path=config.CORPUS_PATH):
+  def __init__(self, feature_names=['SkipthoughtFeatures', 'TfidfFeatures'], combiner='concat', corpus_path=config.CORPUS_PATH):
     self.combiner = combiner
 
     self.features = []

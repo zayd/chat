@@ -10,9 +10,9 @@ import config
 
 class SkipthoughtFeatures(object):
 
-  def __init__(self, corpus_path=config.CORPUS_PATH):
+  def __init__(self, corpus_path=config.CORPUS_PATH, theano_context=None):
       """ Loading sentences, model weights to compute features """
-      self.model = skipthoughts.load_model()
+      self.model = skipthoughts.load_model(theano_context=theano_context)
 
       with open(corpus_path) as f:
           source_train, self.target_train, source_test, self.target_test = pickle.load(f)
@@ -38,6 +38,6 @@ class SkipthoughtFeatures(object):
       else:
         raise Exception('unknown mode')
 
-  def get_feature(self, query):
+  def get_feature(self, query, theano_context=None):
     """ Return feature for one query sentence """
-    return skipthoughts.encode(self.model, [query])
+    return skipthoughts.encode(self.model, [query], theano_context=theano_context)

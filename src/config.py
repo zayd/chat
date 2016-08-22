@@ -15,7 +15,8 @@ ZOPIM_TOKEN_URI = "https://www.zopim.com/oauth2/token"
 CUST_TAG, AGENT_TAG= "Customer", "Agent"
 AGENT_NAMES = ["The Udacity Team"]
 TEST_SIZE = 0.04
-SNAPSHOT = "../models/V2"
+RANDOM_STATE = 42
+SNAPSHOT = "../models/V3"
 
 """ Chat Skipthough Settings """
 CORPUS_PATH = "../src/corpus.pkl"

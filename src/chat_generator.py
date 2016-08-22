@@ -6,9 +6,10 @@ import config
 import cPickle as pickle
 
 class ChatGenerator(object):
+
   def __init__(self, corpus_path=config.CORPUS_PATH, mode='deploy'):
     self.mode = mode
-    self.ranker = ChatRanker(corpus_path=corpus_path, mode=self.mode)
+    self.ranker = ChatRanker(corpus_path=corpus_path, mode=mode)
 
     with open(corpus_path) as f:
         source_train, target_train, source_test, self.target_test = pickle.load(f)
