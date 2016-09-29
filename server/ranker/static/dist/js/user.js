@@ -46,3 +46,8 @@ $(document).ready(function() {
       this.style.height = (this.scrollHeight+15)+'px';
   });
 });
+
+function copyToHiddenField(response_id) {
+  console.log(response_id)
+  $("#response" + response_id + "hidden").val($("#response" + response_id + "textarea").val())
+}

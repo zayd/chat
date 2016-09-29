@@ -502,6 +502,13 @@ pre h3 {
   opacity: 1.0;
 }
 
+.starred-true
+{
+  background: rgba(255, 195, 5, 0.05)  !important; /* #5cb85c */
+  
+}
+
+
 .nothing {
   border: 0;
   outline: none;

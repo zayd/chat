@@ -11,12 +11,12 @@ from ranker import grading_db
 import markdown
 import itertools
 import operator
+import urllib
 
 sys.path.insert(0, '../../')
 from src import config
 
-
-from flask import Blueprint, render_template, flash, request
+from flask import Blueprint, render_template, flash, request, redirect, url_for
 import flask
 
 from wtforms import RadioField, TextAreaField
@@ -109,12 +109,11 @@ def grading():
 
                 cell['source'] = markdown.markdown(' '.join(lines))
 
-
             suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))
             #print suggestions
             ## markdown suggestions
             #for suggestion in suggestions:
-            # #suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
+            ##suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
             submission['suggestions'].append(suggestions)
 
     form = forms.CritiqueForm()
@@ -138,8 +137,11 @@ def grading():
             'responses': responses}
     return render_template('dashboard/pages/grading.html', user=user, title='Grading', form=form, response_form=response_form, submissions=submissions)
 
-@dashboard.route('/dashboard/responses', methods=['GET'])
+@dashboard.route('/dashboard/responses', methods=['GET', 'POST'])
 def responses():
+    data = request.data or request.form
+    print data
+
     question = request.args.get('question', '')
 
     if not question:
@@ -172,7 +174,25 @@ def responses():
 
     edit_response_forms = []
     for idx, filtered_response in enumerate(filtered_responses):
-      edit_response_forms.append(forms.EditResponseForm())
+      edit_response_forms.append(forms.EditResponseForm(prefix='response' + str(idx)))
+
+    for idx, edit_response_form in enumerate(edit_response_forms):
+      response_submit = request.form.get('response' + str(idx) + 'submit')
+      if response_submit == 'delete-response':
+        grading_db.db['filtered-' + question].remove({'_id': filtered_responses[idx]['_id']})
+        return redirect('/dashboard/responses?' + urllib.urlencode(request.args))
+        #print "HAHA we are deleting", idx
+      elif response_submit == 'save-response':
+        response_text = request.form.get('response' + str(idx) + 'hidden')
+        #print response_text, "for",  idx
+        grading_db.db['filtered-' + question].update({'_id': filtered_responses[idx]['_id']},
+            {'observation': response_text})
+        return redirect('/dashboard/responses?' + urllib.urlencode(request.args))
+      elif response_submit == 'star-response':
+        starred = filtered_responses[idx].get('starred', False)
+        grading_db.db['filtered-' + question].update({'_id': filtered_responses[idx]['_id']},
+            {'$set': {'starred': not starred}})
+        return redirect('/dashboard/responses?' + urllib.urlencode(request.args))
 
     user = {'question': question,
             'num_responses': len(responses),
