@@ -16,3 +16,5 @@ Markdown==2.6.6
 Requests==2.11.1
 scipy==0.18.0
 scikit_learn==0.17.1
+Flask-PyMongo
+
