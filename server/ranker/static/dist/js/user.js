@@ -4,6 +4,9 @@ $(document).ready(function() {
         if ($(this).text() === 'Enter new response here...') {
           $(this).empty();
           $(this).addClass("editing");
+          analytics.track('Entered Response', {
+           type: 'New'
+          });
         } else if ($(this).hasClass("active")) {
           // do nothing
         } else {
@@ -11,12 +14,18 @@ $(document).ready(function() {
           $(this).parent().append($(this).clone(true).text('Enter new response here...'));
           $(this).addClass("active");
           $(this).parent().parent().children('.response-box').append($(this));
+          analytics.track('Entered Response', {
+           type: 'New'
+          });
         }
       } else if ($(this).hasClass("active")) {
         // do nothing
       } else {
         $(this).addClass("active");
         $(this).parent().parent().children('.response-box').append($(this));
+        analytics.track('Entered Response', {
+           type: 'Existing'
+        });
       }
   });
 });
@@ -29,6 +38,9 @@ $(document).ready(function() {
       } else {
         $(this).addClass("active");
         $(this).parent().children('.response-binary-false').removeClass("active");
+        analytics.track('Entered Grade', {
+          grade: 'Pass'
+        });
       }
   });
   
@@ -38,6 +50,9 @@ $(document).ready(function() {
       } else {
         $(this).addClass("active");
         $(this).parent().children('.response-binary-true').removeClass("active");
+        analytics.track('Entered Grade', {
+          grade: 'Fail'
+        });
       }
   });
 
