@@ -22,7 +22,7 @@ import flask
 from wtforms import RadioField, TextAreaField
 
 # Import grading module
-sys.path.insert(0, '/home/zayd/code/grading/src/')
+sys.path.insert(0, '/home/dthirman/code/grading/src/')
 import grading_module
 
 dashboard = Blueprint('dashboard', __name__, template_folder='templates', static_folder='bower_components')
@@ -99,22 +99,23 @@ def grading():
         for jdx, answer in enumerate(submission['answers']):
             for cell in answer:
                 lines = cell['source']
-                for kdx, line in enumerate(lines):
-                    if ''.join(line.split()) == "pass":
-                        lines[kdx] = "<div class=highlight-fail>" + lines[kdx] + "</div>"
+                if(request.args.get("intelligence") != "0"):
+                    for kdx, line in enumerate(lines):
+                        if ''.join(line.split()) == "pass":
+                            lines[kdx] = "<div class=highlight-fail>" + lines[kdx] + "</div>"
 
-                    if line.strip() == "if passenger['Sex'] == 'female' or passenger['Sex'] == 'male' and passenger['Age'] <= 10:":
-                        lines[kdx] = "<div class=highlight-pass>" + lines[kdx] + "</div>"
+                        if line.strip() == "if passenger['Sex'] == 'female' or passenger['Sex'] == 'male' and passenger['Age'] <= 10:":
+                            lines[kdx] = "<div class=highlight-pass>" + lines[kdx] + "</div>"
 
 
                 cell['source'] = markdown.markdown(' '.join(lines))
-
-            suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))
-            #print suggestions
-            ## markdown suggestions
-            #for suggestion in suggestions:
-            ##suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
-            submission['suggestions'].append(suggestions)
+            if(request.args.get("intelligence") != "0"):
+                suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))
+                #print suggestions
+                ## markdown suggestions
+                #for suggestion in suggestions:
+                ##suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
+                submission['suggestions'].append(suggestions)
 
     form = forms.CritiqueForm()
 
