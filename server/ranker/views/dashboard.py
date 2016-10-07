@@ -101,11 +101,12 @@ def grading():
             for cell in answer:
                 lines = cell['source']
                 print(cell)
-                if(request.args.get("intelligence") != "0"):
-                    for kdx, line in enumerate(lines):
-                        print(lines)
+                for kdx, line in enumerate(lines):
+                    if(request.args.get("intelligence") != "0"):
                         lines[kdx] = line[0].format(line[1])
-
+                    else:
+                        lines[kdx] = line[1]
+                        print(lines[kdx])
 
                 cell['source'] = markdown.markdown(' '.join(lines))
             if(request.args.get("intelligence") != "0"):
