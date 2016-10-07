@@ -7,6 +7,7 @@ import chat_module
 #from ranker.tasks import celery
 from ranker import chat_db
 from ranker import grading_db
+from ranker import new_grading_db
 
 import markdown
 import itertools
@@ -92,20 +93,18 @@ def grading():
     all_responses = [[[q1, q1_b, q1_c], [q1_b, q1_c, q1_d], [q1_b, q1_d, q1], [q1_wrong], []],
                     [[q2_d, q2_c, q2_b], [q2_a, q2_c, q2_b], [q2_a, q2_b], [q1_wrong], []]]
 
-    submissions = list(grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1).limit(5))
+    submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1).limit(5))
 
     for idx, submission in enumerate(submissions):
         submission['suggestions'] = []
         for jdx, answer in enumerate(submission['answers']):
             for cell in answer:
                 lines = cell['source']
+                print(cell)
                 if(request.args.get("intelligence") != "0"):
                     for kdx, line in enumerate(lines):
-                        if ''.join(line.split()) == "pass":
-                            lines[kdx] = "<div class=highlight-fail>" + lines[kdx] + "</div>"
-
-                        if line.strip() == "if passenger['Sex'] == 'female' or passenger['Sex'] == 'male' and passenger['Age'] <= 10:":
-                            lines[kdx] = "<div class=highlight-pass>" + lines[kdx] + "</div>"
+                        print(lines)
+                        lines[kdx] = line[0].format(line[1])
 
 
                 cell['source'] = markdown.markdown(' '.join(lines))
