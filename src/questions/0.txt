@@ -1,0 +1,13 @@
+def predictions_0(data):
+     """ Model with no features. Always predicts a passenger did not survive. """
+ predictions = []
+ for _, passenger in data.iterrows():
+
+     # Predict the survival of 'passenger'
+
+ # Return our predictions
+ return pd.Series(predictions)
+
+# Make the predictions
+ predictions = predictions_0(data) 
+ print accuracy_score(outcomes, predictions) 

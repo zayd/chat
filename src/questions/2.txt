@@ -1,0 +1,16 @@
+def predictions_2(data):
+     """ Model with two features: 
+             - Predict a passenger survived if they are female.
+             - Predict a passenger survived if they are male and younger than 10. """
+ predictions = []
+ for _, passenger in data.iterrows():
+
+     # Remove the 'pass' statement below 
+     # and write your prediction conditions here
+
+ # Return our predictions
+ return pd.Series(predictions)
+
+# Make the predictions
+ predictions = predictions_2(data) 
+ print accuracy_score(outcomes, predictions) 
