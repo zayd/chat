@@ -56,46 +56,55 @@ with app.app_context():
             newAnswers.append([])
             for block in a[i]:
                 newBlock = []
-                for line in block['source']:
-                    try:
-                        #print line, len(line)
-                        #print("Line:", line.strip())
-                        if(line.strip() not in sampleCode[i]):
-                            tokens = ""
-                            for token in tokenize.generate_tokens(StringIO.StringIO(line).readline):
-                                #tokens.append(token[1])
-                                tokens += token[1] + " "
-                            tokens = tokens[:-1]
-                            
-                            x = vectorizer.transform([tokens])
-                            x = tfidf.transform(x)
-                            y = model.predict(x)
+                if sampleCode[i][0] == 'code':
+                    for line in block['source']:
+                        try:
+                            if(line.strip() not in sampleCode[i]):
+                                tokens = ""
+                                for token in tokenize.generate_tokens(StringIO.StringIO(line).readline):
+                                    tokens += token[1] + " "
+                                tokens = tokens[:-1]
+                                x = vectorizer.transform([tokens])
+                                x = tfidf.transform(x)
+                                y = model.predict(x)
 
-                            #print(y)
-                            
-                            #print tokens
-                            #print tokens, en(tokens)
-                            
-                            
-
-                            result = model.predict_proba(x)
-                            #print result.shape                        
-                            prob = result[0,1]
-                            #print result
-                            #print prob
-                            if prob > .9:
-                                newBlock.append(['highlight-pass', line])
-                            elif prob < .4:
-                                newBlock.append(['highlight-fail', line])
+                                result = model.predict_proba(x)
+                                prob = result[0,1]
+                                if prob > .8:
+                                    newBlock.append(['highlight-pass', line])
+                                elif prob < .4:
+                                    newBlock.append(['highlight-fail', line])
+                                else:
+                                    newBlock.append(['none', line])
                             else:
                                 newBlock.append(['none', line])
-                        else:
-                            #print("Sample:", line)
+                        except:
                             newBlock.append(['none', line])
-                    except:
-                        #print("Couldn't tokenize: ", line)
-                    #    print "hi"
-                        newBlock.append(['none', line])
+                elif sampleCode[i][0] == 'text':
+                    lines = ""
+                    for line in block['source']:
+                        try:                            
+                            for token in tokenize.generate_tokens(StringIO.StringIO(line).readline):
+                                lines += token[1] + " "
+                        except:
+                            pass
+                    lines = lines[:-1]
+                    lines = lines.split(' . ')
+                    lines = [x for x in lines if len(x) > 1]
+                    for line in lines:
+
+                        x = vectorizer.transform([line])
+                        x = tfidf.transform(x)
+                        y = model.predict(x)
+
+                        result = model.predict_proba(x)
+                        prob = result[0,1]
+                        if prob > .9:
+                            newBlock.append(['highlight-pass', line])
+                        elif prob < .4:
+                            newBlock.append(['highlight-fail', line])
+                        else:
+                            newBlock.append(['none', line])
                 newAnswers[-1].append({'source': newBlock})
         sub['answers']=newAnswers
         newSubmissions.insert_one(sub)

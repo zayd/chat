@@ -1,4 +1,3 @@
-code
 def predictions_0(data):
      """ Model with no features. Always predicts a passenger did not survive. """
  predictions = []

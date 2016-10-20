@@ -50,15 +50,14 @@ def findData():
             data.append([])
             targets.append([])
         print len(data), len(targets)
-        count = 0
-        ncount = 0
+        count = [0,0,0,0,0]
+        ncount = [0,0,0,0,0]
         sampleCode = []
         for i in range(5):
             f=open("questions/"+str(i)+".txt")
             sampleCode.append([])
             for line in f.readlines():
                 sampleCode[i].append(line.strip())
-
         for idx, submission in enumerate(submissions):
             grades = submission['grades']
             answers = submission['answers']
@@ -67,49 +66,69 @@ def findData():
                 code = answers[i]
                 if len(code) > 0:
                     code = code[0]['source']
-                    for line in code:
-                        #print line
-                        try:
+                    if sampleCode[i][0] == 'code':
+                        for line in code:
+                            #print line
+                            try:
+                                if(line.strip() not in sampleCode[i]):
+                                    tokens = ""
+                                    for token in tokenize.generate_tokens(StringIO.StringIO(line).readline):
+                                        if(len(token[1]) > 0):
+                                            #tokens.append(token[1])
+                                            tokens += token[1] + " "
 
-                            if(line.strip() not in sampleCode[i]):
-                                tokens = ""
-                                for token in tokenize.generate_tokens(StringIO.StringIO(line).readline):
-                                    if(len(token[1]) > 0):
-                                        #tokens.append(token[1])
-                                        tokens += token[1] + " "
-
-                                tokens = tokens[:-1]
-                                #astCode = ast.dump(ast.parse(line))
-                                if(result == 'passed'):
-                                    data[i].append(tokens)
-                                    targets[i].append(1)
-                                    count += 1
-                                elif(result == 'failed'):
-                                    for j in range(count - ncount):
+                                    tokens = tokens[:-1]
+                                    #astCode = ast.dump(ast.parse(line))
+                                    if(result == 'passed'):
                                         data[i].append(tokens)
-                                        targets[i].append(0)
-                                        ncount +=1  
+                                        targets[i].append(1)
+                                        count[i] += 1
+                                    elif(result == 'failed'):
+                                        for j in range((count[i] - ncount[i])):
+                                        #for j in range(3):
+                                            
+                                            data[i].append(tokens)
+                                            targets[i].append(0)
+                                            ncount[i] +=1  
+                            except:
+                                #print("Couldn't tokenize: ", line)
+                                pass
+                    elif sampleCode[i][0] == 'text':
+                        lines = ""
+                        for line in code:
+                            try:
+                                if(line.strip() not in sampleCode[i]):
+                                    for token in tokenize.generate_tokens(StringIO.StringIO(line).readline):
+                                        if(len(token[1]) > 0):
+                                            #tokens.append(token[1])
+                                            lines += token[1] + " "
+                            except:
+                                pass
 
-                        except:
-                            #print("Couldn't tokenize: ", line)
-                            pass
+                        lines = lines[:-1]
+                        lines = lines.split(' . ')
+                        lines = [x for x in lines if len(x) > 1]
+                        
+                        #astCode = ast.dump(ast.parse(line))
+                        if(result == 'passed'):
+                            data[i] += lines
+                            targets[i] += [1]*len(lines)
+                            count[i] += 1
+                        elif(result == 'failed'):
+                            #for j in range(3):
+                            for j in range((count[i] - ncount[i])):
+                                data[i] += lines
+                                targets[i] += [0]*len(lines)
+                                ncount[i] +=1 
+
+                                            
+                    
         print count, ncount
-        return (data, targets)
+        return (data, targets, sampleCode)
 
 
+data, targets, sampleCode= findData()
 
-
-### App ###
-
-
-x = "x = y + z"
-y = ast.parse(x)
-z = ast.dump(y)
-a = re.split('\W+', z)
-b = filter(lambda c: c == ' ' or (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z'), z)
-
-    
-data, targets = findData()
 for i in range(len(targets)):
     target = targets[i]
     print "Question ", i, float(sum(target))/len(target)
@@ -119,27 +138,22 @@ models = []
 
 for i in range(len(data)):
     datum = data[i]
-    vectorizer = CountVectorizer(min_df=1, analyzer='word', token_pattern=u"(?u)\\b([^\\s]+)\\b")
-    x = vectorizer.fit_transform(datum)
-    #print(x.shape, x[0])
-    
-    #print(t.shape, t)
-    # for k in range(x.shape[0]):
-    #     count = 0
-    #     t = vectorizer.transform([datum[k]])
-    #     for j in range(x[k].shape[1]):
-    #         #print(j, t[0,j], x[0][0,j])
-    #         if(t[0,j] != x[0][0,j]):
-    #             #print "Bad"
-    #             pass
-         
-        #print "Done Checking"
-        #z=input()
-    tf_transformer = TfidfTransformer(use_idf=False).fit(x)
-    x = tf_transformer.transform(x)
-    print(x.shape)
-    model =  svm.SVC(probability=True)
-    #model = MultinomialNB()
+    answerType = sampleCode[i][0]
+    print answerType
+    if(answerType == 'code'):
+        vectorizer = CountVectorizer(min_df=1, analyzer='word', token_pattern=u"(?u)\\b([^\\s]+)\\b")
+        x = vectorizer.fit_transform(datum)
+        tf_transformer = TfidfTransformer(use_idf=False).fit(x)
+        x = tf_transformer.transform(x)
+        model = svm.SVC(probability=True)
+        #model = MultinomialNB()
+    elif(answerType == 'text'):
+        vectorizer = CountVectorizer(min_df=1, analyzer='word')
+        x = vectorizer.fit_transform(datum)
+        tf_transformer = TfidfTransformer(use_idf=False).fit(x)
+        x = tf_transformer.transform(x)
+        model = MultinomialNB()
+        #model = svm.SVC(probability=True)
     model.fit(x, targets[i])
     print(model.score(x, targets[i]))
     models.append((model, vectorizer, tf_transformer))

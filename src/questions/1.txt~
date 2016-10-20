@@ -1,4 +1,3 @@
-code
  def predictions_1(data):
      """ Model with one feature: 
              - Predict a passenger survived if they are female. """
