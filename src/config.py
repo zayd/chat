@@ -20,6 +20,8 @@ SNAPSHOT = "../models/V3"
 
 """ Chat Skipthough Settings """
 CORPUS_PATH = "../src/corpus.pkl"
+
+USERNAME = "dthirman"
 #CORPUS_VECTORS = "../src/corpus.npz"
 
 # ZOPIM_USERNAME = "zayd.enam@gmail.com"

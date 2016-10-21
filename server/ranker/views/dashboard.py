@@ -23,7 +23,7 @@ import flask
 from wtforms import RadioField, TextAreaField
 
 # Import grading module
-sys.path.insert(0, '/home/dthirman/code/grading/src/')
+sys.path.insert(0, '/home/'+config.USERNAME+'/code/grading/src/')
 import grading_module
 
 dashboard = Blueprint('dashboard', __name__, template_folder='templates', static_folder='bower_components')
@@ -93,21 +93,24 @@ def grading():
     all_responses = [[[q1, q1_b, q1_c], [q1_b, q1_c, q1_d], [q1_b, q1_d, q1], [q1_wrong], []],
                     [[q2_d, q2_c, q2_b], [q2_a, q2_c, q2_b], [q2_a, q2_b], [q1_wrong], []]]
 
-    submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1).limit(5))
-
+    submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1).limit(20))
+    annotations = {'highlight-pass': u"<div class=highlight-pass>{}</div>", 'highlight-fail': u"<div class=highlight-fail>{}</div>", "none":u"{}"}
     for idx, submission in enumerate(submissions):
         submission['suggestions'] = []
+        grades = submission['grades']
         for jdx, answer in enumerate(submission['answers']):
+            result = grades[jdx]['result']
             for cell in answer:
                 lines = cell['source']
                 print(cell)
                 for kdx, line in enumerate(lines):
                     if(request.args.get("intelligence") != "0"):
-                        lines[kdx] = line[0].format(line[1])
+                        lines[kdx] = annotations[line[0]].format(line[1])
                     else:
                         lines[kdx] = line[1]
                         print(lines[kdx])
-
+                if result is not None:
+                    lines = lines + [result]
                 cell['source'] = markdown.markdown(' '.join(lines))
             if(request.args.get("intelligence") != "0"):
                 suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))
