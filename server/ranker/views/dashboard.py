@@ -8,7 +8,7 @@ import chat_module
 from ranker import chat_db
 from ranker import grading_db
 from ranker import new_grading_db
-
+import psycopg2
 import markdown
 import itertools
 import operator
@@ -17,8 +17,9 @@ import urllib
 sys.path.insert(0, '../../')
 from src import config
 
-from flask import Blueprint, render_template, flash, request, redirect, url_for
+from flask import Flask, Blueprint, render_template, flash, request, redirect, url_for
 import flask
+from flask.ext.login import LoginManager, UserMixin, login_required
 
 from wtforms import RadioField, TextAreaField
 
@@ -27,7 +28,6 @@ sys.path.insert(0, '/home/'+config.USERNAME+'/code/grading/src/')
 import grading_module
 
 dashboard = Blueprint('dashboard', __name__, template_folder='templates', static_folder='bower_components')
-
 @dashboard.route('/dashboard')
 @dashboard.route('/dashboard/index.html')
 def index():
@@ -203,3 +203,50 @@ def responses():
             'responses': responses,
             'filtered_responses': filtered_responses}
     return render_template('dashboard/pages/responses.html', user=user, title='Grading', edit_response_forms=edit_response_forms)
+
+@dashboard.route('/dashboard/temp', methods=['GET', 'POST'])
+def temp():
+    return redirect(url_for("/dashboard/grading"))
+
+@dashboard.route('/dashboard/admin', methods=['GET', 'POST'])
+@login_required
+def admin():
+    conn = psycopg2.connect(dbname='responses', user='dthirman', host='udacity.cjsia33swned.us-west-1.redshift.amazonaws.com', port='5439', password='Udacity1')
+    cur = conn.cursor()
+
+    cur.execute("select original_timestamp, user_id from javascript.identifies;")
+    identifies = cur.fetchall();
+    responses = {}
+    users = set([x[1] for x in identifies])
+    for i in identifies:
+        if(i[1] is not None and '?' not in i[1]):
+            if i[1] not in responses:
+                responses[i[1]] = []
+                if(i[1] and i[1].isdigit()):
+                    str = 'select original_timestamp, grade from javascript.entered_grade where user_id=' + i[1]+ ';'
+                    cur.execute(str)
+                    grade = cur.fetchall();
+                    responses[i[1]] += [['grade'] + list(x) for x in grade]
+                    str = 'select original_timestamp, type from javascript.entered_response where user_id=' + i[1]+ ';'
+                    cur.execute(str)
+                    response = cur.fetchall();
+                    responses[i[1]] += [['response'] + list(x) for x in response]
+            responses[i[1]].append(['identify'] + list(i))
+
+    users = [ x for x in users if x is not None and '?' not in x]
+    for u in users:
+        response = responses[u]
+        response = sorted(response, key = lambda x: x[1], reverse= False)
+        newResponse = []        
+        for i in range(0, len(response)):
+            if(response[i][0] == 'identify'):
+                newResponse.append([response[i][0]])
+            else:
+                newResponse.append([response[i][0], (response[i][1] - response[i-1][1]).total_seconds(), response[i][2]])
+
+        responses[u] = newResponse
+
+    user = {'editors' : users, "responses": responses}
+
+    edit_response_forms = []            
+    return render_template('dashboard/pages/admin.html', user=user, title='Admin', edit_response_forms=edit_response_forms)
