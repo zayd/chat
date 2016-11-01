@@ -17,4 +17,7 @@ Requests==2.11.1
 scipy==0.18.0
 scikit_learn==0.17.1
 Flask-PyMongo
+psycopg2==2.4.5
+flask-login
+
 

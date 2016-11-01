@@ -240,9 +240,9 @@ def admin():
         newResponse = []        
         for i in range(0, len(response)):
             if(response[i][0] == 'identify'):
-                newResponse.append([response[i][0]])
+                newResponse.append([response[i][0], response[i][1]])
             else:
-                newResponse.append([response[i][0], (response[i][1] - response[i-1][1]).total_seconds(), response[i][2]])
+                newResponse.append([response[i][0], response[i][1], (response[i][1] - response[i-1][1]).total_seconds(), response[i][2]])
 
         responses[u] = newResponse
 
