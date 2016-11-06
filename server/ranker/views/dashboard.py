@@ -13,7 +13,8 @@ import markdown
 import itertools
 import operator
 import urllib
-
+import random
+import copy 
 sys.path.insert(0, '../../')
 from src import config
 
@@ -93,32 +94,33 @@ def grading():
     all_responses = [[[q1, q1_b, q1_c], [q1_b, q1_c, q1_d], [q1_b, q1_d, q1], [q1_wrong], []],
                     [[q2_d, q2_c, q2_b], [q2_a, q2_c, q2_b], [q2_a, q2_b], [q1_wrong], []]]
 
-    submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1).limit(20))
+    submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1))
+
     annotations = {'highlight-pass': u"<div class=highlight-pass>{}</div>", 'highlight-fail': u"<div class=highlight-fail>{}</div>", "none":u"{}"}
-    for idx, submission in enumerate(submissions):
-        submission['suggestions'] = []
-        grades = submission['grades']
-        for jdx, answer in enumerate(submission['answers']):
-            result = grades[jdx]['result']
-            for cell in answer:
-                lines = cell['source']
-                print(cell)
-                for kdx, line in enumerate(lines):
-                    if(request.args.get("intelligence") != "0"):
-                        lines[kdx] = annotations[line[0]].format(line[1])
-                    else:
-                        lines[kdx] = line[1]
-                        print(lines[kdx])
-                if result is not None:
-                    lines = lines + [result]
-                cell['source'] = markdown.markdown(' '.join(lines))
-            if(request.args.get("intelligence") != "0"):
-                suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))
-                #print suggestions
-                ## markdown suggestions
-                #for suggestion in suggestions:
-                ##suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
-                submission['suggestions'].append(suggestions)
+    submission = random.choice(submissions)
+    submission['suggestions'] = []
+    grades = submission['grades']
+    for jdx, answer in enumerate(submission['answers']):
+        result = grades[jdx]['result']
+        for cell in answer:
+            lines = cell['source']
+            for kdx, line in enumerate(lines):
+                if(request.args.get("intelligence") != "0"):
+                    lines[kdx] = annotations[line[0]].format(line[1])
+                else:
+                    lines[kdx] = line[1]
+                    print(lines[kdx])
+
+            cell['source'] = markdown.markdown(' '.join(lines))
+        
+        print submission['answers']
+        if(request.args.get("intelligence") != "0"):
+            suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))
+            #print suggestions
+            ## markdown suggestions
+            #for suggestion in suggestions:
+            ##suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
+            submission['suggestions'].append(suggestions)
 
     form = forms.CritiqueForm()
 
@@ -139,7 +141,7 @@ def grading():
     user = {'num_conversations': 102,
             'labels': labels,
             'responses': responses}
-    return render_template('dashboard/pages/grading.html', user=user, title='Grading', form=form, response_form=response_form, submissions=submissions)
+    return render_template('dashboard/pages/grading.html', user=user, title='Grading', form=form, response_form=response_form, submission=submission)
 
 @dashboard.route('/dashboard/responses', methods=['GET', 'POST'])
 def responses():
@@ -204,9 +206,6 @@ def responses():
             'filtered_responses': filtered_responses}
     return render_template('dashboard/pages/responses.html', user=user, title='Grading', edit_response_forms=edit_response_forms)
 
-@dashboard.route('/dashboard/temp', methods=['GET', 'POST'])
-def temp():
-    return redirect(url_for("/dashboard/grading"))
 
 @dashboard.route('/dashboard/admin', methods=['GET', 'POST'])
 @login_required
@@ -215,7 +214,9 @@ def admin():
     cur = conn.cursor()
 
     cur.execute("select original_timestamp, user_id from javascript.identifies;")
+
     identifies = cur.fetchall();
+
     responses = {}
     users = set([x[1] for x in identifies])
     for i in identifies:
@@ -231,20 +232,28 @@ def admin():
                     cur.execute(str)
                     response = cur.fetchall();
                     responses[i[1]] += [['response'] + list(x) for x in response]
+                    cur.execute("select original_timestamp, user_id from javascript.submitted_grade where user_id= "+ i[1]+ ';')
+                    submits = cur.fetchall();
+                    responses[i[1]] += [['Submitted Grade'] + list(x) for x in submits]
+                    #cur.execute("select original_timestamp, user_id from javascript.submitted_grade_and_next_user where user_id=" + i[1]+ ';')
+                    #submitNexts = cur.fetchall();
+                    #responses[i[1]] += [['Submitted Grade and Moved to Next User'] + list(x) for x in submitNexts]
             responses[i[1]].append(['identify'] + list(i))
 
     users = [ x for x in users if x is not None and '?' not in x]
     for u in users:
         response = responses[u]
         response = sorted(response, key = lambda x: x[1], reverse= False)
-        newResponse = []        
+        newResponse = [[response[0][1]]]        
         for i in range(0, len(response)):
             if(response[i][0] == 'identify'):
-                newResponse.append([response[i][0], response[i][1]])
+                newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), "", "" ,response[i][1]])
+            elif(response[i][0] == 'Submitted Grade'):
+                newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(),"", response[i][1]])
             else:
-                newResponse.append([response[i][0], response[i][1], (response[i][1] - response[i-1][1]).total_seconds(), response[i][2]])
+                newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(), response[i][2], newResponse[-1][-1]])
 
-        responses[u] = newResponse
+        responses[u] = newResponse[1:]
 
     user = {'editors' : users, "responses": responses}
 
