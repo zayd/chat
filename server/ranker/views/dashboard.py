@@ -207,6 +207,77 @@ def responses():
     return render_template('dashboard/pages/responses.html', user=user, title='Grading', edit_response_forms=edit_response_forms)
 
 
+@dashboard.route('/dashboard/evaluate', methods=['GET', 'POST'])
+def evaluate():
+    labels = ['Id', 'Responses', 'Score #0', 'Relevant?']
+
+    q1 = {'text': 'Good job! This result means that if you always guessed that a passenger did not survive, you would be right more often than not (more often than random chance).', 'color': 'rgba(221, 119, 136, 0.15)'}
+    q1_b = {'text': 'Great, you have run the code and get the correct result.', 'color': 'rgba(221, 153, 119, 0.15)'}
+    q1_c = {'text': 'Well done! Results from predictions_0 has been reported correctly as 61.62%', 'color': ''}
+    q1_d = {'text': 'This result means that if you always guessed that a passenger did not survive, you would be right more often than not (more often than random chance). Another way of thinking about this, is that the dataset is unbalanced.', 'color': 'rgba(102, 85, 102, 0.15)'}
+    q1_wrong = {'text': 'You did not submit an answer to this question in the submission.'}
+    responses = [q1, q1_b, q1_c]
+
+    q2_a = {'text': 'This is a great example of a classification problem. You\'ll learn how to do this later in the course.'}
+    q2_b = {'text': 'That is good example for problem that can be addressed by supervised learning.', 'color': 'rgba(122, 148, 96, 0.15)'}
+    q2_c = {'text': 'Great example!'}
+    q2_d = {'text': 'This is a very interesting and plausible supervised learning scenario, well done.'}
+
+    all_responses = [[[q1, q1_b, q1_c], [q1_b, q1_c, q1_d], [q1_b, q1_d, q1], [q1_wrong], []],
+                    [[q2_d, q2_c, q2_b], [q2_a, q2_c, q2_b], [q2_a, q2_b], [q1_wrong], []]]
+
+    submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1))
+
+    annotations = {'highlight-pass': u"<div class=highlight-pass>{}</div>", 'highlight-fail': u"<div class=highlight-fail>{}</div>", "none":u"{}"}
+    submission = random.choice(submissions)
+    submission['suggestions'] = []
+    grades = submission['grades']
+    jdx = random.choice(range(len(submission['answers'])))
+    answer = submission['answers'][jdx]    
+    submission['answers']=answer
+    result = grades[jdx]['result']
+    for cell in answer:
+        lines = cell['source']
+        for kdx, line in enumerate(lines):
+            if(request.args.get("intelligence") != "0"):
+                lines[kdx] = annotations[line[0]].format(line[1])
+            else:
+                lines[kdx] = line[1]
+                print(lines[kdx])
+
+        cell['source'] = markdown.markdown(' '.join(lines))
+    
+    if(request.args.get("intelligence") != "0"):
+        suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))[0]
+        #print suggestions
+        ## markdown suggestions
+        #for suggestion in suggestions:
+        ##suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
+        submission['suggestions'].append(suggestions)
+
+    form = forms.CritiqueForm()
+
+    if form.validate_on_submit():
+        app.logger.info('Query submitted: {0}'.format(form.query.data))
+        responses = cg.generate_response(form.query.data)
+
+    for idx, response in enumerate(responses):
+        rf = RadioField('response_' + str(idx), choices=[('Yes', 'Yes'), ('No', 'No'), ('?', '?')],
+                        default='?')
+        setattr(forms.ResponseForm, 'response_' + str(idx), rf)
+
+    response_form = forms.ResponseForm()
+
+    if response_form.validate_on_submit():
+        app.logger.info('Correction submitted: {0}'.format(response_form.data))
+
+    user = {'num_conversations': 102,
+            'labels': labels,
+            'responses': responses}
+    return render_template('dashboard/pages/evaluate.html', user=user, title='Evaluate', form=form, response_form=response_form, submission=submission)
+
+
+
 @dashboard.route('/dashboard/admin', methods=['GET', 'POST'])
 @login_required
 def admin():
