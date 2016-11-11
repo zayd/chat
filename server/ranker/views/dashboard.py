@@ -1,6 +1,8 @@
+import string
 import sys
 from ranker import forms
 from ranker import app
+import ranker
 #from ranker.tasks import cg
 #from ranker import tasks
 import chat_module
@@ -287,7 +289,15 @@ def admin():
     cur.execute("select original_timestamp, user_id from javascript.identifies;")
 
     identifies = cur.fetchall();
-
+    try:
+        username = request.form['username']
+        userid = request.form['id']
+        password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(16))
+        user = ranker.createUser(username, password, userid)
+        ranker.db.session.add(user)
+        ranker.db.session.commit()
+    except Exception as e:
+        print e
     responses = {}
     users = set([x[1] for x in identifies])
     for i in identifies:
@@ -312,21 +322,28 @@ def admin():
             responses[i[1]].append(['identify'] + list(i))
 
     users = [ x for x in users if x is not None and '?' not in x]
+    newUsers = []
     for u in users:
-        response = responses[u]
-        response = sorted(response, key = lambda x: x[1], reverse= False)
-        newResponse = [[response[0][1]]]        
-        for i in range(0, len(response)):
-            if(response[i][0] == 'identify'):
-                newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), "", "" ,response[i][1]])
-            elif(response[i][0] == 'Submitted Grade'):
-                newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(),"", response[i][1]])
-            else:
-                newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(), response[i][2], newResponse[-1][-1]])
 
-        responses[u] = newResponse[1:]
+        newUser = ranker.User.query.filter_by(email=u).all()
+        if(len(newUser) > 0):
+            newUsers.append((newUser[0].username, newUser[0].email))
+            response = responses[u]
+            response = sorted(response, key = lambda x: x[1], reverse= False)
+            newResponse = [[response[0][1]]]        
+            for i in range(0, len(response)):
+                if(response[i][0] == 'identify'):
+                    newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), "", "" ,response[i][1]])
+                elif(response[i][0] == 'Submitted Grade'):
+                    newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(),"", response[i][1]])
+                else:
+                    newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(), response[i][2], newResponse[-1][-1]])
 
-    user = {'editors' : users, "responses": responses}
+            responses[u] = newResponse[1:]
+        else:
+            print u
+
+    user = {'editors' : newUsers, "responses": responses}
 
     edit_response_forms = []            
     return render_template('dashboard/pages/admin.html', user=user, title='Admin', edit_response_forms=edit_response_forms)

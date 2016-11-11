@@ -88,6 +88,9 @@ class User(db.Model):
         return '<User %r>' % (self.username)
 
 
+def createUser(username, password, email):
+    return User(username, password, email)
+
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))

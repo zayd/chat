@@ -5,7 +5,8 @@ $(document).ready(function() {
           $(this).empty();
           $(this).addClass("editing");
           analytics.track('Entered Response', {
-           type: 'New'
+           type: 'New',
+           text: $(this).text()
           });
         } else if ($(this).hasClass("active")) {
           // do nothing
@@ -15,7 +16,8 @@ $(document).ready(function() {
           $(this).addClass("active");
           $(this).parent().parent().children('.response-box').append($(this));
           analytics.track('Entered Response', {
-           type: 'New'
+           type: 'New',
+           text: $(this).text()
           });
         }
       } else if ($(this).hasClass("active")) {
@@ -24,7 +26,8 @@ $(document).ready(function() {
         $(this).addClass("active");
         $(this).parent().parent().children('.response-box').append($(this));
         analytics.track('Entered Response', {
-           type: 'Existing'
+           type: 'Existing',
+           text: '$(this).text()'
         });
       }
   });
@@ -43,6 +46,7 @@ $(document).ready(function() {
         });
       }
   });
+
   
   $('.response-binary-false').on('click', function() {
       if ($(this).hasClass("active")) {
