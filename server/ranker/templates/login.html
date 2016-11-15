@@ -1,9 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div id="page-wrapper">
 <html>
   <head>
     <title>Login page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="static/dist/css/login_style.css">
-    <link href="static/bootstrap.min.css" rel="stylesheet" media="screen">
   </head>
   <body>
     <div class="login">
@@ -15,7 +15,7 @@
           request.form.username }}">
          <input type="password" placeholder="Password" name="password" class="input-txt"  value="{{
           request.form.password }}">
-        <input class="btn btn-default" type="submit" value="Login">
+        <input class="btn btn-info" type="submit" value="Login">
       </form>
       {% if error %}
         <p class="error"><strong>Error:</strong> {{ error }}
@@ -23,3 +23,5 @@
     </div>
   </body>
 </html>
+</div>
+{% endblock %}
