@@ -305,10 +305,12 @@ def admin():
             if i[1] not in responses:
                 responses[i[1]] = []
                 if(i[1] and i[1].isdigit()):
+
                     str = 'select original_timestamp, grade from javascript.entered_grade where user_id=' + i[1]+ ';'
                     cur.execute(str)
                     grade = cur.fetchall();
                     responses[i[1]] += [['grade'] + list(x) for x in grade]
+
                     str = 'select original_timestamp, type from javascript.entered_response where user_id=' + i[1]+ ';'
                     cur.execute(str)
                     response = cur.fetchall();
@@ -316,13 +318,19 @@ def admin():
                     cur.execute("select original_timestamp, user_id from javascript.submitted_grade where user_id= "+ i[1]+ ';')
                     submits = cur.fetchall();
                     responses[i[1]] += [['Submitted Grade'] + list(x) for x in submits]
-                    #cur.execute("select original_timestamp, user_id from javascript.submitted_grade_and_next_user where user_id=" + i[1]+ ';')
-                    #submitNexts = cur.fetchall();
-                    #responses[i[1]] += [['Submitted Grade and Moved to Next User'] + list(x) for x in submitNexts]
+
+
+                    cur.execute("select original_timestamp from javascript.submitted_grade_and_next_user where context_page_search like '%id="+i[1]+"%';")
+                    submitNexts = cur.fetchall();
+                    for s in submitNexts:
+                        if s[0] is not None:
+                            responses[i[1]] += [['Submitted Grade and Moved to Next User'] + list(s)+[i[1]]]
+
             responses[i[1]].append(['identify'] + list(i))
 
     users = [ x for x in users if x is not None and '?' not in x]
     newUsers = []
+    statistics = {}
     for u in users:
 
         newUser = ranker.User.query.filter_by(email=u).all()
@@ -334,7 +342,7 @@ def admin():
             for i in range(0, len(response)):
                 if(response[i][0] == 'identify'):
                     newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), "", "" ,response[i][1]])
-                elif(response[i][0] == 'Submitted Grade'):
+                elif(response[i][0] == 'Submitted Grade' or response[i][0] == 'Submitted Grade and Moved to Next User'):
                     newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(),"", response[i][1]])
                 else:
                     newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(), response[i][2], newResponse[-1][-1]])
@@ -343,7 +351,24 @@ def admin():
         else:
             print u
 
-    user = {'editors' : newUsers, "responses": responses}
+        num_questions=  0
+        avg_time_per_question=0
+        num_students = 0
+        num_old_response = 0
+        num_new_response = 0
+        for response in responses[u]:
+            if response[0] == 'Submitted Grade' or response[0] == 'Submitted Grade and Moved to Next User':
+                num_questions += 1
+                avg_time_per_question += float(response[2])
+            if response[0] == 'response':
+                if(response[3] == 'Existing'):
+                    num_old_response += 1
+                elif(response[3] == 'New'):
+                    num_new_response += 1
+
+        avg_time_per_question /= max(num_questions, 1)
+        statistics[u] = [num_questions, avg_time_per_question, num_students, num_old_response, num_new_response]
+    user = {'editors' : newUsers, "responses": responses, "stats": statistics}
 
     edit_response_forms = []            
     return render_template('dashboard/pages/admin.html', user=user, title='Admin', edit_response_forms=edit_response_forms)
