@@ -280,6 +280,14 @@ def evaluate():
 
 
 
+@dashboard.route('/dashboard/deleteUser', methods=['GET', 'POST'])
+def deleteUser():
+    username = request.args.get('username')
+    user = ranker.User.query.filter_by(email=username).all()[0]
+    ranker.db.session.delete(user)
+    ranker.db.session.commit()
+    return redirect("/dashboard/admin")
+
 @dashboard.route('/dashboard/admin', methods=['GET', 'POST'])
 @login_required
 def admin():
@@ -299,20 +307,22 @@ def admin():
     except Exception as e:
         print e
     responses = {}
-    users = set([x[1] for x in identifies])
+    users = ranker.User.query.all()
+    users =  [str(x.email) for x in users if x.username != u'admin']
+    #users = set([x[1] for x in identifies])
     for i in identifies:
         if(i[1] is not None and '?' not in i[1]):
             if i[1] not in responses:
                 responses[i[1]] = []
                 if(i[1] and i[1].isdigit()):
 
-                    str = 'select original_timestamp, grade from javascript.entered_grade where user_id=' + i[1]+ ';'
-                    cur.execute(str)
+                    stri = 'select original_timestamp, grade from javascript.entered_grade where user_id=' + i[1]+ ';'
+                    cur.execute(stri)
                     grade = cur.fetchall();
                     responses[i[1]] += [['grade'] + list(x) for x in grade]
 
-                    str = 'select original_timestamp, type from javascript.entered_response where user_id=' + i[1]+ ';'
-                    cur.execute(str)
+                    stri = 'select original_timestamp, type from javascript.entered_response where user_id=' + i[1]+ ';'
+                    cur.execute(stri)
                     response = cur.fetchall();
                     responses[i[1]] += [['response'] + list(x) for x in response]
                     cur.execute("select original_timestamp, user_id from javascript.submitted_grade where user_id= "+ i[1]+ ';')
@@ -327,27 +337,30 @@ def admin():
                             responses[i[1]] += [['Submitted Grade and Moved to Next User'] + list(s)+[i[1]]]
 
             responses[i[1]].append(['identify'] + list(i))
-
-    users = [ x for x in users if x is not None and '?' not in x]
+    print users
+    #users = [ x for x in users if x is not None and '?' not in x]
     newUsers = []
     statistics = {}
     for u in users:
 
         newUser = ranker.User.query.filter_by(email=u).all()
-        if(len(newUser) > 0):
-            newUsers.append((newUser[0].username, newUser[0].email))
-            response = responses[u]
-            response = sorted(response, key = lambda x: x[1], reverse= False)
-            newResponse = [[response[0][1]]]        
-            for i in range(0, len(response)):
-                if(response[i][0] == 'identify'):
-                    newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), "", "" ,response[i][1]])
-                elif(response[i][0] == 'Submitted Grade' or response[i][0] == 'Submitted Grade and Moved to Next User'):
-                    newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(),"", response[i][1]])
-                else:
-                    newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(), response[i][2], newResponse[-1][-1]])
+        if(len(newUser) > 0 ):
+            if u in responses:
+                newUsers.append((newUser[0].username, newUser[0].email))
+                response = responses[u]
+                response = sorted(response, key = lambda x: x[1], reverse= False)
+                newResponse = [[response[0][1]]]        
+                for i in range(0, len(response)):
+                    if(response[i][0] == 'identify'):
+                        newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), "", "" ,response[i][1]])
+                    elif(response[i][0] == 'Submitted Grade' or response[i][0] == 'Submitted Grade and Moved to Next User'):
+                        newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(),"", response[i][1]])
+                    else:
+                        newResponse.append([response[i][0], response[i][1].strftime("%Y-%m-%d %H:%M:%S"), (response[i][1] - newResponse[-1][-1]).total_seconds(), response[i][2], newResponse[-1][-1]])
 
-            responses[u] = newResponse[1:]
+                responses[u] = newResponse[1:]
+            else:
+                newUsers.append((newUser[0].username, newUser[0].email))
         else:
             print u
 
@@ -356,19 +369,23 @@ def admin():
         num_students = 0
         num_old_response = 0
         num_new_response = 0
-        for response in responses[u]:
-            if response[0] == 'Submitted Grade' or response[0] == 'Submitted Grade and Moved to Next User':
-                num_questions += 1
-                avg_time_per_question += float(response[2])
-            if response[0] == 'response':
-                if(response[3] == 'Existing'):
-                    num_old_response += 1
-                elif(response[3] == 'New'):
-                    num_new_response += 1
+        if u in responses:
+            for response in responses[u]:
+                if response[0] == 'Submitted Grade' or response[0] == 'Submitted Grade and Moved to Next User':
+                    num_questions += 1
+                    avg_time_per_question += float(response[2])
+                if response[0] == 'response':
+                    if(response[3] == 'Existing'):
+                        num_old_response += 1
+                    elif(response[3] == 'New'):
+                        num_new_response += 1
 
         avg_time_per_question /= max(num_questions, 1)
         statistics[u] = [num_questions, avg_time_per_question, num_students, num_old_response, num_new_response]
     user = {'editors' : newUsers, "responses": responses, "stats": statistics}
 
     edit_response_forms = []            
-    return render_template('dashboard/pages/admin.html', user=user, title='Admin', edit_response_forms=edit_response_forms)
+    return render_template('dashboard/pages/admin.html', user=user, title='Admin', edit_response_forms=edit_response_forms, deleteUser=deleteUser)
+
+
+
