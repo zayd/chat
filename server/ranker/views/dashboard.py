@@ -99,7 +99,21 @@ def grading():
     submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1))
 
     annotations = {'highlight-pass': u"<div class=highlight-pass>{}</div>", 'highlight-fail': u"<div class=highlight-fail>{}</div>", "none":u"{}"}
-    submission = random.choice(submissions)
+    userid = request.args.get("id")
+    if userid is not None:
+        index = ranker.Page.query.filter_by(userid=userid).all()
+        if(len(index) == 0):
+            submission = random.choice(submissions)
+            return render_template('dashboard/pages/completed.html')
+
+        index = index[0]
+        ranker.db.session.delete(index)
+        ranker.db.session.commit()
+        submission = submissions[index.index]
+
+
+    else:
+        submission = random.choice(submissions)
     submission['suggestions'] = []
     grades = submission['grades']
     for jdx, answer in enumerate(submission['answers']):
@@ -288,6 +302,20 @@ def deleteUser():
     ranker.db.session.commit()
     return redirect("/dashboard/admin")
 
+
+@dashboard.route('/dashboard/addSubs', methods=['GET', 'POST'])
+def addSubs():
+    userid = request.args.get('userid')
+    numSubs = len(ranker.Page.query.filter_by(userid=userid).all())
+    numTotalSubs = len(list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1)))
+    for i in range(numSubs, 10):
+        index = random.randint(0,numTotalSubs)
+        page = ranker.Page(userid, index)
+        ranker.db.session.add(page)
+    ranker.db.session.commit()
+
+    return redirect("/dashboard/admin")
+
 @dashboard.route('/dashboard/admin', methods=['GET', 'POST'])
 @login_required
 def admin():
@@ -295,6 +323,8 @@ def admin():
     cur = conn.cursor()
 
     cur.execute("select original_timestamp, user_id from javascript.identifies;")
+    
+    numSubmissions = len(list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1)))
 
     identifies = cur.fetchall();
     try:
@@ -380,8 +410,9 @@ def admin():
                     elif(response[3] == 'New'):
                         num_new_response += 1
 
+        numSubs = len(ranker.Page.query.filter_by(userid=u).all())
         avg_time_per_question /= max(num_questions, 1)
-        statistics[u] = [num_questions, avg_time_per_question, num_students, num_old_response, num_new_response]
+        statistics[u] = [num_questions, avg_time_per_question, num_students, num_old_response, num_new_response, numSubs]
     user = {'editors' : newUsers, "responses": responses, "stats": statistics}
 
     edit_response_forms = []            

@@ -25,10 +25,13 @@ app = Flask(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/'+config.USERNAME+'/code/chat/src/user.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/'+config.USERNAME+'/code/chat/src/pages'
+SQLALCHEMY_BINDS = {
+    'page': 'sqlite:////home/'+config.USERNAME+'/code/chat/src/page.db',
+    'users' : 'sqlite:////home/'+config.USERNAME+'/code/chat/src/user.db'
+}
+app.config['SQLALCHEMY_BINDS'] = SQLALCHEMY_BINDS
 db = SQLAlchemy(app)
-
 
 
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379'
@@ -60,8 +63,10 @@ app.logger.addHandler(handler)
 
 class User(db.Model):
     __tablename__ = "users"
+    __bindkey__ = "users"
+
     id = db.Column('user_id',db.Integer , primary_key=True)
-    username = db.Column('username', db.String(20), unique=True , index=True)
+    username = db.Column('username', db.String(20), index=True)
     password = db.Column('password' , db.String(10))
     email = db.Column('email',db.String(50),unique=True , index=True)
     registered_on = db.Column('registered_on' , db.DateTime)
@@ -85,8 +90,41 @@ class User(db.Model):
         return unicode(self.id)
  
     def __repr__(self):
-        return '<User %r>' % (self.username)
+        return '<User %r>:' % (self.userid)
 
+
+class Page(db.Model):
+    __tablename__ = "page"
+    __bindkey__ = "page"
+    __table_args__ = {'sqlite_autoincrement': True}
+
+
+    id = db.Column('user_id',db.Integer , primary_key=True)
+
+    userid = db.Column('userid', db.String(20), unique=False)
+    index = db.Column('index', db.Integer, unique=False)
+    registered_on = db.Column('registered_on' , db.DateTime)
+
+
+    def __init__(self , userid ,index):
+        self.userid = userid
+        self.index = index
+        self.registered_on = datetime.utcnow()
+
+    def __repr__(self):
+        return '<User %r>: index %r' % (self.userid, self.index)
+
+    def get_id(self):
+        return unicode(self.id)
+
+    def is_authenticated(self):
+        return True
+ 
+    def is_active(self):
+        return True
+ 
+    def is_anonymous(self):
+        return False
 
 def createUser(username, password, email):
     return User(username, password, email)
