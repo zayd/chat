@@ -410,9 +410,10 @@ def admin():
                     elif(response[3] == 'New'):
                         num_new_response += 1
 
-        numSubs = len(ranker.Page.query.filter_by(userid=u).all())
+        subs = ranker.Page.query.filter_by(userid=u).all()
+        numSubs = len(subs)
         avg_time_per_question /= max(num_questions, 1)
-        statistics[u] = [num_questions, avg_time_per_question, num_students, num_old_response, num_new_response, numSubs]
+        statistics[u] = [num_questions, avg_time_per_question, num_students, num_old_response, num_new_response, numSubs, subs]
     user = {'editors' : newUsers, "responses": responses, "stats": statistics}
 
     edit_response_forms = []            
