@@ -96,23 +96,26 @@ def grading():
     all_responses = [[[q1, q1_b, q1_c], [q1_b, q1_c, q1_d], [q1_b, q1_d, q1], [q1_wrong], []],
                     [[q2_d, q2_c, q2_b], [q2_a, q2_c, q2_b], [q2_a, q2_b], [q1_wrong], []]]
 
-    submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1))
+    
 
     annotations = {'highlight-pass': u"<div class=highlight-pass>{}</div>", 'highlight-fail': u"<div class=highlight-fail>{}</div>", "none":u"{}"}
     userid = request.args.get("id")
     if userid is not None:
         index = ranker.Page.query.filter_by(userid=userid).all()
         if(len(index) == 0):
-            submission = random.choice(submissions)
             return render_template('dashboard/pages/completed.html')
 
         index = index[0]
         ranker.db.session.delete(index)
         ranker.db.session.commit()
-        submission = submissions[index.index]
+        submissions = list(new_grading_db.db['submissions'].find({'_id': index.index}))
+        
+        print(len(submissions))
+        submission = submissions[0]
 
 
     else:
+        submissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}))
         submission = random.choice(submissions)
     submission['suggestions'] = []
     grades = submission['grades']
@@ -158,6 +161,52 @@ def grading():
             'labels': labels,
             'responses': responses}
     return render_template('dashboard/pages/grading.html', user=user, title='Grading', form=form, response_form=response_form, submission=submission)
+
+@dashboard.route('/dashboard/submission', methods=['GET', 'POST'])
+def submissionPage():
+    submissions = list(new_grading_db.db['submissions'].find({'_id': int(request.args.get("id"))}))
+    if (len(submissions) == 0):
+        return render_template('dashboard/pages/not_found.html')
+    submission=submissions[0]
+    submission['suggestions'] = []
+    grades = submission['grades']
+    annotations = {'highlight-pass': u"<div class=highlight-pass>{}</div>", 'highlight-fail': u"<div class=highlight-fail>{}</div>", "none":u"{}"}
+    for jdx, answer in enumerate(submission['answers']):
+        result = grades[jdx]['result']
+        for cell in answer:
+            lines = cell['source']
+            for kdx, line in enumerate(lines):
+                if(request.args.get("intelligence") != "0"):
+                    lines[kdx] = annotations[line[0]].format(line[1])
+                else:
+                    lines[kdx] = line[1]
+                    print(lines[kdx])
+
+            cell['source'] = markdown.markdown(' '.join(lines))
+        
+        print submission['answers']
+        if(request.args.get("intelligence") != "0"):
+            suggestions = list(grading_module.generate_random_response('', 'submissions', jdx))
+            #print suggestions
+            ## markdown suggestions
+            #for suggestion in suggestions:
+            ##suggestion['text'] = markdown.markdown(''.join(suggestion['text']))
+            submission['suggestions'].append(suggestions)
+
+    form = forms.CritiqueForm()
+
+    if form.validate_on_submit():
+        app.logger.info('Query submitted: {0}'.format(form.query.data))
+        responses = cg.generate_response(form.query.data)
+
+    response_form = forms.ResponseForm()
+
+    if response_form.validate_on_submit():
+        app.logger.info('Correction submitted: {0}'.format(response_form.data))
+
+    user = {'num_conversations': 102}
+    return render_template('dashboard/pages/submission.html', user=user, title='Grading', form=form, response_form=response_form, submission=submission)
+
 
 @dashboard.route('/dashboard/responses', methods=['GET', 'POST'])
 def responses():
@@ -307,10 +356,10 @@ def deleteUser():
 def addSubs():
     userid = request.args.get('userid')
     numSubs = len(ranker.Page.query.filter_by(userid=userid).all())
-    numTotalSubs = len(list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1)))
+    totalSubs = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1))
     for i in range(numSubs, 10):
-        index = random.randint(0,numTotalSubs)
-        page = ranker.Page(userid, index)
+        sub = random.choice(totalSubs)
+        page = ranker.Page(userid, sub['_id'])
         ranker.db.session.add(page)
     ranker.db.session.commit()
 
@@ -324,7 +373,7 @@ def admin():
 
     cur.execute("select original_timestamp, user_id from javascript.identifies;")
     
-    numSubmissions = len(list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1)))
+    numSubmissions = list(new_grading_db.db['submissions'].find({'answers': {'$not': {'$size': 0}}}).sort("_id", -1))
 
     identifies = cur.fetchall();
     try:
